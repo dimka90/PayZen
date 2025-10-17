@@ -12,9 +12,8 @@ const app: Application = express();
 // Security middleware
 app.use(helmet());
 
-// CORS configuration
 const corsOptions: cors.CorsOptions = {
-  origin: (origin, callback) => {
+  origin: function(origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
     if (!origin || config.cors.origins.includes(origin)) {
       callback(null, true);
     } else {
