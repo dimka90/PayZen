@@ -4,13 +4,13 @@
   "description": "PayZen - DeFi Payment Platform Backend",
   "main": "dist/server.js",
   "scripts": {
-  "dev": "nodemon src/server.ts",
-  "build": "tsc",
-  "start": "node dist/server.js",
-  "db:migrate": "npm run build && node dist/database/migrate.js",
-  "test": "jest",
-  "lint": "eslint . --ext .ts"
-},
+    "dev": "nodemon src/server.ts",
+    "build": "tsc && cp src/database/migrations.sql dist/database/",
+    "start": "node dist/server.js",
+    "db:migrate": "npm run build && node dist/database/migrate.js",
+    "test": "jest",
+    "lint": "eslint . --ext .ts"
+  },
   "keywords": [
     "defi",
     "payments",
