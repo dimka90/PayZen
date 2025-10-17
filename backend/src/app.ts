@@ -1,38 +1,39 @@
 import express, { Application, Request, Response, NextFunction } from 'express';
-import cors from 'cors';
+// import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import config from './config';
 import routes from './routes';
-import { CorsOptions } from 'cors';
+// import { CorsOptions } from 'cors';
 
 const app: Application = express();
 
 // Security middleware
 app.use(helmet());
 
-const corsOptions: CorsOptions = {
-  origin: (origin: string | undefined, callback: (error: Error | null, success?: boolean) => void) => {
-    const allowedOrigins = Array.isArray(config.cors.origins) 
-      ? config.cors.origins 
-      : (config.cors.origins as string).split(',');
+app.use((req: Request, res: Response, next: NextFunction) => {
+  const allowedOrigins: string[] = Array.isArray(config.cors.origins)
+    ? config.cors.origins
+    : (config.cors.origins as string).split(',');
 
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-};
+  const origin = req.headers.origin;
+  
+  if (!origin || allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin || '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+  }
 
-// Remove type assertion and use the middleware directly
-app.use(cors(corsOptions));
+  if (req.method === 'OPTIONS') {
+    res.sendStatus(200);
+    return;
+  }
 
+  next();
+});
 
 
 // Body parsing middleware
