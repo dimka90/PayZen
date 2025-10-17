@@ -15,7 +15,6 @@ app.use(helmet());
 
 const corsOptions: CorsOptions = {
   origin: (origin: string | undefined, callback: (error: Error | null, success?: boolean) => void) => {
-    // Convert string of allowed origins to array if needed
     const allowedOrigins = Array.isArray(config.cors.origins) 
       ? config.cors.origins 
       : (config.cors.origins as string).split(',');
@@ -31,8 +30,8 @@ const corsOptions: CorsOptions = {
   allowedHeaders: ['Content-Type', 'Authorization'],
 };
 
-// Use middleware
-app.use(cors(corsOptions) as express.RequestHandler);
+// Remove type assertion and use the middleware directly
+app.use(cors(corsOptions));
 
 
 
