@@ -1,16 +1,16 @@
-"use client"
+"use client";
 
-import type React from "react"
-import { Toaster } from "sonner"
-import { BaseAccountProvider } from "@/components/providers/base-account-provider"
-import { WalletProvider } from "@/components/providers/wallet-provider"
+import type React from "react";
+import { Toaster } from "sonner";
+import { BaseAccountProvider } from "@/components/providers/base-account-provider";
+import { WalletProvider } from "@/components/providers/wallet-provider";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <BaseAccountProvider>
       <WalletProvider>
         {children}
-        {/* <Toaster
+        <Toaster
           theme="dark"
           position="top-right"
           toastOptions={{
@@ -20,8 +20,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
               color: "white",
             },
           }}
-        /> */}
+        />
       </WalletProvider>
     </BaseAccountProvider>
-  )
+  );
 }

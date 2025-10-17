@@ -23,6 +23,9 @@ import {
 import Link from "next/link";
 import { BaseAccountDemo } from "@/components/base-account-demo";
 
+import { useEffect, useState } from "react";
+import { useBaseAccount } from "@/components/providers/base-account-provider";
+
 const recentTransactions = [
   {
     id: 1,
@@ -59,6 +62,39 @@ const recentTransactions = [
 ];
 
 export default function DashboardPage() {
+  const { balance } = useBaseAccount();
+  const [stats, setStats] = useState(null);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const response = await fetch(
+          "http://localhost:5000/api/v1/dashboard/stats",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          },
+        );
+        const data = await response.json();
+        if (data.success) {
+          setStats(data.data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch stats:", error);
+      }
+    };
+
+    fetchStats();
+  }, []);
+
+  console.log(balance);
+
+  const formattedBalance = balance
+    ? (parseInt(balance) / 1e6).toFixed(2)
+    : "0.00";
+
   return (
     <div className="p-6 lg:p-8 space-y-8">
       {/* Header */}
@@ -80,7 +116,9 @@ export default function DashboardPage() {
             <Wallet className="h-4 w-4 text-slate-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-black">$1,802.45</div>
+            <div className="text-2xl font-bold text-black">
+              ${formattedBalance}
+            </div>
             <p className="text-xs text-slate-400 mt-1">USDC on Base</p>
           </CardContent>
         </Card>
@@ -94,9 +132,11 @@ export default function DashboardPage() {
             <TrendingUp className="h-4 w-4 text-green-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-black">$3,456.78</div>
+            <div className="text-2xl font-bold text-black">
+              ${stats ? stats.monthly_volume : "0.00"}
+            </div>
             <p className="text-xs text-green-400 mt-1">
-              +12.5% from last month
+              {stats ? `${stats.monthly_change}% from last month` : ""}
             </p>
           </CardContent>
         </Card>
@@ -110,8 +150,12 @@ export default function DashboardPage() {
             <ArrowDownRight className="h-4 w-4 text-green-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-black">$4,123.00</div>
-            <p className="text-xs text-slate-400 mt-1">23 transactions</p>
+            <div className="text-2xl font-bold text-black">
+              ${stats ? stats.received_amount : "0.00"}
+            </div>
+            <p className="text-xs text-slate-400 mt-1">
+              {stats ? `${stats.received_count} transactions` : ""}
+            </p>
           </CardContent>
         </Card>
 
@@ -124,8 +168,12 @@ export default function DashboardPage() {
             <ArrowUpRight className="h-4 w-4 text-amber-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-black">$2,666.22</div>
-            <p className="text-xs text-slate-400 mt-1">15 transactions</p>
+            <div className="text-2xl font-bold text-black">
+              ${stats ? stats.sent_amount : "0.00"}
+            </div>
+            <p className="text-xs text-slate-400 mt-1">
+              {stats ? `${stats.sent_count} transactions` : ""}
+            </p>
           </CardContent>
         </Card>
       </div>
