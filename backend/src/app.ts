@@ -13,20 +13,20 @@ const app: Application = express();
 app.use(helmet());
 
 // CORS configuration
-app.use(
-  cors({
-    origin: function(origin, callback) {
-      if (!origin || config.cors.origins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error('Not allowed by CORS'));
-      }
-    },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-  })
-);
+const corsOptions: cors.CorsOptions = {
+  origin: (origin, callback) => {
+    if (!origin || config.cors.origins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+};
+
+app.use(cors(corsOptions));
 
 
 // Body parsing middleware

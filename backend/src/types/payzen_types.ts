@@ -1,5 +1,12 @@
 // Type Definitions for PayZen Backend
 
+import { JwtPayload } from 'jsonwebtoken';
+
+export interface JWTPayload extends JwtPayload {
+  wallet_address: string;
+  user_id: string;
+}
+
 export interface User {
   id: string;
   wallet_address: string;
