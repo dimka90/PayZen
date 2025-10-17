@@ -18,6 +18,7 @@ interface Config {
      expires_in: string | number;
   };
   blockchain: {
+    base_chain_id(base_chain_id: any): number | bigint | undefined;
     base_rpc_url: string;
     chain_id: number;
     usdc_contract_address: string;
@@ -51,10 +52,13 @@ const config: Config = {
   },
   
   blockchain: {
-    base_rpc_url: process.env.BASE_RPC_URL || 'https://mainnet.base.org',
-    chain_id: parseInt(process.env.BASE_CHAIN_ID || '8453', 10),
-    usdc_contract_address: process.env.USDC_CONTRACT_ADDRESS || '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
-    alchemy_api_key: process.env.ALCHEMY_API_KEY,
+      base_rpc_url: process.env.BASE_RPC_URL || 'https://mainnet.base.org',
+      chain_id: parseInt(process.env.BASE_CHAIN_ID || '84532', 10),
+      usdc_contract_address: process.env.USDC_CONTRACT_ADDRESS || '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
+      alchemy_api_key: process.env.ALCHEMY_API_KEY,
+      base_chain_id: function (_: any): number | bigint | undefined {
+          throw new Error('Function not implemented.');
+      }
   },
   
   cors: {

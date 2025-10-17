@@ -25,6 +25,8 @@ async function startServer() {
       console.log(`🏥 Health: http://localhost:${PORT}/api/${config.api_version}/health`);
       console.log(`⛓️  Blockchain: Base Network (Chain ID: ${config.blockchain.chain_id})`);
       console.log(`💵 USDC Contract: ${config.blockchain.usdc_contract_address}`);
+      console.log("RPC", config.blockchain.base_rpc_url);
+      console.log("Chain Id", config.blockchain.chain_id);
     });
   } catch (error) {
     console.error('❌ Failed to start server:', error);
