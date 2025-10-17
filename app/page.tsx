@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
-  ArrowRight,
   Wallet,
   Users,
   LinkIcon,
@@ -28,9 +27,10 @@ export default function LandingPage() {
     try {
       await baseAccount.connect();
       toast.success("Wallet connected successfully!");
+      console.log(baseAccount);
 
       const response = await fetch(
-        "http://localhost:5000/api/v1/auth/wallet-check",
+        `${process.env.NEXT_PUBLIC_API_URL}/auth/wallet-check`,
         {
           method: "POST",
           headers: {
@@ -61,19 +61,20 @@ export default function LandingPage() {
     try {
       // 1. Get nonce to sign
       const nonceResponse = await fetch(
-        "http://localhost:5000/api/v1/auth/nonce",
+        `${process.env.NEXT_PUBLIC_API_URL}/auth/nonce`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            walletAddress: baseAccount.universalAddress,
+            wallet_address: baseAccount.universalAddress,
           }),
         },
       );
       const nonceData = await nonceResponse.json();
-      const nonce = nonceData.nonce;
+      console.log(nonceData);
+      const nonce = nonceData.data.nonce;
       const message = `Sign this message to authenticate: ${nonce}`;
 
       // 2. Sign the message
@@ -84,7 +85,7 @@ export default function LandingPage() {
 
       // 3. Login with signature
       const loginResponse = await fetch(
-        "http://localhost:5000/api/v1/auth/login",
+        `${process.env.NEXT_PUBLIC_API_URL}/auth/login`,
         {
           method: "POST",
           headers: {

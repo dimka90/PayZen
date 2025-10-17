@@ -21,56 +21,30 @@ import {
   ExternalLink,
 } from "lucide-react";
 import Link from "next/link";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { BaseAccountDemo } from "@/components/base-account-demo";
 
 import { useEffect, useState } from "react";
 import { useBaseAccount } from "@/components/providers/base-account-provider";
 
-const recentTransactions = [
-  {
-    id: 1,
-    type: "received",
-    from: "@alice",
-    amount: 150.0,
-    time: "2 hours ago",
-    status: "completed",
-  },
-  {
-    id: 2,
-    type: "sent",
-    to: "@bob",
-    amount: 75.5,
-    time: "5 hours ago",
-    status: "completed",
-  },
-  {
-    id: 3,
-    type: "received",
-    from: "@charlie",
-    amount: 200.0,
-    time: "1 day ago",
-    status: "completed",
-  },
-  {
-    id: 4,
-    type: "sent",
-    to: "@david",
-    amount: 50.0,
-    time: "2 days ago",
-    status: "completed",
-  },
-];
-
 export default function DashboardPage() {
-  const { balance } = useBaseAccount();
-  const [stats, setStats] = useState(null);
+  const { balance, getSpendPermission } = useBaseAccount();
 
+  const [stats, setStats] = useState<any | null>(null);
+  
   useEffect(() => {
     const fetchStats = async () => {
       try {
         const token = localStorage.getItem("token");
         const response = await fetch(
-          "http://localhost:5000/api/v1/dashboard/stats",
+          `${process.env.NEXT_PUBLIC_API_URL}/dashboard/stats`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -87,9 +61,8 @@ export default function DashboardPage() {
     };
 
     fetchStats();
+    getSpendPermission();
   }, []);
-
-  console.log(balance);
 
   const formattedBalance = balance
     ? (parseInt(balance) / 1e6).toFixed(2)
@@ -104,6 +77,45 @@ export default function DashboardPage() {
           Welcome back! Here's your account overview.
         </p>
       </div>
+
+      {/* Spend Permission Card */}
+      {/* {!hasSpendPermission && (
+        <Card className="glass-card border-slate-700/50">
+          <CardHeader>
+            <CardTitle className="text-black">Set Spend Permission</CardTitle>
+            <CardDescription className="text-slate-600">
+              Grant a spending limit to the server wallet to enable automated
+              payments.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Dialog
+              open={isSpendPermissionModalOpen}
+              onOpenChange={setIsSpendPermissionModalOpen}
+            >
+              <DialogTrigger asChild>
+                <Button className="w-full bg-teal-600 hover:bg-teal-700 text-white">
+                  Set Spend Permission
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle>Set Spend Permission</DialogTitle>
+                  <DialogDescription>
+                    Grant a spending limit to the server wallet to enable
+                    automated payments.
+                  </DialogDescription>
+                </DialogHeader>
+                <SpendPermissionSetup
+                  onPermissionGranted={() =>
+                    setIsSpendPermissionModalOpen(false)
+                  }
+                />
+              </DialogContent>
+            </Dialog>
+          </CardContent>
+        </Card>
+      )} */}
 
       {/* Stats Grid */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
@@ -224,7 +236,7 @@ export default function DashboardPage() {
       {/* Recent Transactions & Payment Link */}
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Recent Transactions */}
-        <Card className="glass-card border-slate-700/50 lg:col-span-2">
+        {/* <Card className="glass-card border-slate-700/50 lg:col-span-2">
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
               <CardTitle className="text-black">Recent Transactions</CardTitle>
@@ -286,10 +298,10 @@ export default function DashboardPage() {
               ))}
             </div>
           </CardContent>
-        </Card>
+        </Card> */}
 
         {/* Payment Link Card */}
-        <Card className="glass-card border-slate-700/50">
+        {/* <Card className="glass-card border-slate-700/50">
           <CardHeader>
             <CardTitle className="text-black">Your Payment Link</CardTitle>
             <CardDescription className="text-slate-600">
@@ -322,7 +334,7 @@ export default function DashboardPage() {
               </Button>
             </div>
           </CardContent>
-        </Card>
+        </Card> */}
       </div>
     </div>
   );

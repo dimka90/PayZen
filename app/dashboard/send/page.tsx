@@ -17,23 +17,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Send,
   ArrowLeft,
   CheckCircle2,
   AlertCircle,
   Loader2,
 } from "lucide-react";
+import { Copy } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useBaseAccount } from "@/components/providers/base-account-provider";
 import { toast } from "sonner";
+
+import { encodeFunctionData, parseUnits } from "viem";
 
 type SendStep = "form" | "confirm" | "success";
 
@@ -50,26 +46,79 @@ export default function SendPaymentPage() {
 
   const [transactionHash, setTransactionHash] = useState<string>("");
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setStep("confirm");
+  type ResolvedUser = {
+    full_name: string;
+    username: string;
+    wallet_address?: string;
   };
 
-  const waitForTransaction = async (txHash: string) => {
+  const [resolvedUser, setResolvedUser] = useState<ResolvedUser | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (recipient.startsWith("@")) {
+      try {
+        const token = localStorage.getItem("token");
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/auth/check-user`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ username: recipient.substring(1) }),
+          },
+        );
+
+        const data = await response.json();
+
+        if (data.success) {
+          setResolvedUser(data.data.user);
+          setRecipient(data.data.user.wallet_address);
+          setStep("confirm");
+        } else {
+          toast.error("Invalid username");
+        }
+      } catch (error) {
+        console.error("Username validation failed:", error);
+        toast.error("Username validation failed");
+      }
+    } else {
+      setResolvedUser(null);
+      setStep("confirm");
+    }
+  };
+
+  const waitForTransaction = async (callsId: string) => {
     return new Promise((resolve, reject) => {
+      const maxAttempts = 60;
+      let attempts = 0;
+
       const interval = setInterval(async () => {
+        attempts++;
+
+        if (attempts > maxAttempts) {
+          clearInterval(interval);
+          reject(new Error("Transaction timeout"));
+          return;
+        }
+
         try {
-          const receipt = await baseAccount.provider.request({
-            method: "eth_getTransactionReceipt",
-            params: [txHash],
-          });
-          if (receipt) {
+          const status = await baseAccount.getCallsStatus(callsId);
+
+          console.log("Transaction status:", status);
+
+          if (status && status.status === "CONFIRMED") {
             clearInterval(interval);
-            resolve(receipt);
+            resolve(status);
+          } else if (status && status.status === "FAILED") {
+            clearInterval(interval);
+            reject(new Error("Transaction failed"));
           }
         } catch (error) {
-          clearInterval(interval);
-          reject(error);
+          console.error("Error checking transaction status:", error);
         }
       }, 1000);
     });
@@ -88,13 +137,47 @@ export default function SendPaymentPage() {
     });
 
     try {
-      const txHash = await baseAccount.sendUsdcTransaction({
-        to: recipient,
-        amount: amount,
+      const chainId = await baseAccount.provider.request({
+        method: "eth_chainId",
       });
-      setTransactionHash(txHash);
 
-      await waitForTransaction(txHash);
+      const usdcContractAddress =
+        chainId === "0x2105" // Base Mainnet
+          ? "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
+          : "0x036CbD53842c5426634e7929541eC2318f3dCF7e"; // Base Sepolia
+
+      const amountInSmallestUnit = parseUnits(amount, 6);
+
+      const data = encodeFunctionData({
+        abi: [
+          {
+            name: "transfer",
+            type: "function",
+            stateMutability: "nonpayable",
+            inputs: [
+              { name: "to", type: "address" },
+              { name: "amount", type: "uint256" },
+            ],
+            outputs: [{ name: "", type: "bool" }],
+          },
+        ],
+        functionName: "transfer",
+        args: [(recipient as `0x${string}`), amountInSmallestUnit],
+      });
+
+      const txHash = await baseAccount.sendTransaction({
+        to: usdcContractAddress,
+        data: data
+      });
+      let transactionId: string;
+      if (txHash && typeof txHash === "object" && "id" in txHash && typeof (txHash as any).id === "string") {
+        transactionId = (txHash as any).id;
+      } else {
+        transactionId = String(txHash);
+      }
+      setTransactionHash(transactionId);
+
+      // await waitForTransaction(txHash);
 
       toast.success("Transaction successful!", {
         id: toastId,
@@ -102,11 +185,34 @@ export default function SendPaymentPage() {
         duration: 5000,
       });
 
+      console.log("Transaction Hash:", transactionId);
+
+      // Save payment to backend
+      const token = localStorage.getItem("token");
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/payments/save`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          transaction_hash: transactionId,
+          from_wallet:
+            baseAccount.subAccountAddress || baseAccount.universalAddress,
+          to_wallet: recipient,
+          amount: amount,
+          currency: "USDC",
+          note: note,
+          status: "completed",
+        }),
+      });
+
       setStep("success");
     } catch (error) {
       console.error("Payment failed:", error);
       toast.error(error instanceof Error ? error.message : "Payment failed", {
         id: toastId,
+        duration: 5000,
       });
     } finally {
       setIsProcessing(false);
@@ -118,6 +224,7 @@ export default function SendPaymentPage() {
     setAmount("");
     setNote("");
     setTransactionHash("");
+    setResolvedUser(null);
     setStep("form");
   };
 
@@ -142,22 +249,38 @@ export default function SendPaymentPage() {
                   Your payment has been successfully processed
                 </p>
               </div>
-              <div className="w-full space-y-3 p-4 rounded-lg bg-slate-800/50 border border-slate-700">
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-600">Recipient</span>
-                  <span className="text-black font-mono">{recipient}</span>
+              <div className="w-full space-y-3 p-4 rounded-lg bg-white border border-slate-700">
+                <div className="flex flex-col sm:flex-row sm:justify-between text-sm text-left sm:text-right">
+                  <span className="text-slate-600 sm:text-left">Recipient</span>
+                  <span className="text-black font-mono break-all">
+                    {recipient}
+                  </span>
                 </div>
-                <div className="flex justify-between text-sm">
+                <div className="flex flex-col sm:flex-row sm:justify-between text-sm text-left sm:text-right">
                   <span className="text-slate-600">Amount</span>
                   <span className="text-black font-bold">${amount} USDC</span>
                 </div>
-                <div className="flex justify-between text-sm">
+                <div className="flex flex-col sm:flex-row sm:justify-between text-sm text-left sm:items-start">
                   <span className="text-slate-600">Transaction ID</span>
-                  <span className="text-black font-mono text-xs">
-                    {transactionHash}
-                  </span>
+                  <div className="flex items-center gap-2 sm:justify-end">
+                    <span className="text-black font-mono text-xs break-all text-right">
+                      {transactionHash}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 text-slate-400 hover:text-white hover:bg-slate-700"
+                      onClick={() => {
+                        navigator.clipboard.writeText(transactionHash);
+                        toast.success("Transaction ID copied!");
+                      }}
+                    >
+                      <Copy className="h-3 w-3" />
+                    </Button>
+                  </div>
                 </div>
               </div>
+
               <div className="w-full space-y-2">
                 <Button
                   onClick={handleNewPayment}
@@ -168,7 +291,7 @@ export default function SendPaymentPage() {
                 <Button
                   onClick={() => router.push("/dashboard")}
                   variant="outline"
-                  className="w-full bg-slate-800/50 border-slate-700 text-black hover:bg-slate-800 hover:text-black"
+                  className="w-full bg-black border-slate-700 text-white hover:bg-white hover:text-black"
                 >
                   Back to Dashboard
                 </Button>
@@ -187,6 +310,7 @@ export default function SendPaymentPage() {
           href="#"
           onClick={(e) => {
             e.preventDefault();
+            setResolvedUser(null);
             setStep("form");
           }}
           className="inline-flex items-center text-slate-600 hover:text-black transition-colors"
@@ -214,6 +338,21 @@ export default function SendPaymentPage() {
               <div className="space-y-4">
                 <div className="p-4 rounded-lg bg-slate-800/50 border border-slate-700">
                   <p className="text-sm text-slate-600 mb-1">Recipient</p>
+                  {resolvedUser && (
+                    <div className="flex items-center space-x-2 mb-2">
+                      <div className="h-8 w-8 rounded-full bg-gradient-to-br from-teal-600 to-teal-700 flex items-center justify-center text-white text-sm font-medium">
+                        {resolvedUser.full_name.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-black">
+                          {resolvedUser.full_name}
+                        </p>
+                        <p className="text-xs text-slate-600">
+                          @{resolvedUser.username}
+                        </p>
+                      </div>
+                    </div>
+                  )}
                   <p className="text-black font-mono">{recipient}</p>
                 </div>
                 <div className="p-4 rounded-lg bg-slate-800/50 border border-slate-700">
@@ -274,7 +413,7 @@ export default function SendPaymentPage() {
     <div className="p-6 lg:p-8 space-y-6">
       <Link
         href="/dashboard"
-        className="inline-flex items-center text-slate-600 hover:text-black transition-colors"
+        className="inline-flex items-center text-black hover:text-black transition-colors"
       >
         <ArrowLeft className="mr-2 h-4 w-4" />
         Back to dashboard
@@ -309,7 +448,7 @@ export default function SendPaymentPage() {
                   value={recipient}
                   onChange={(e) => setRecipient(e.target.value)}
                   required
-                  className="bg-slate-800/50 border-slate-700 text-black placeholder:text-slate-500"
+                  className="bg-white border-slate-700 text-black placeholder:text-slate-500"
                 />
                 <p className="text-xs text-slate-600">
                   Enter a PayZen username or wallet address
@@ -333,7 +472,7 @@ export default function SendPaymentPage() {
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
                     required
-                    className="bg-slate-800/50 border-slate-700 text-black placeholder:text-slate-500 pl-7"
+                    className="bg-white border-slate-700 text-black placeholder:text-slate-500 pl-7"
                   />
                 </div>
                 <div className="flex justify-between text-xs">
@@ -351,7 +490,7 @@ export default function SendPaymentPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="note" className="text-slate-300">
+                <Label htmlFor="note" className="text-slate-600">
                   Note (Optional)
                 </Label>
                 <Textarea
@@ -360,7 +499,7 @@ export default function SendPaymentPage() {
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
                   rows={3}
-                  className="bg-slate-800/50 border-slate-700 text-white placeholder:text-slate-500 resize-none"
+                  className="bg-white border-slate-700 text-black placeholder:text-slate-500 resize-none"
                 />
               </div>
 

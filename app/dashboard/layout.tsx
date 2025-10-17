@@ -30,6 +30,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+import { useBaseAccount } from "@/components/providers/base-account-provider";
+import { useRouter } from "next/navigation";
+
 const navigation = [
   { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
   { name: "Send Payment", href: "/dashboard/send", icon: Send },
@@ -44,6 +47,17 @@ export default function DashboardLayout({
 }) {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const baseAccount = useBaseAccount();
+  const router = useRouter();
+
+  const handleLogout = () => {
+    console.log("Logging out...");
+    baseAccount.disconnect();
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+
+    router.push("/");
+  };
 
   return (
     <div className="gradient-bg min-h-screen">
@@ -131,7 +145,7 @@ export default function DashboardLayout({
               <span className="font-medium">Settings</span>
             </Link>
             <button
-              onClick={() => console.log("[v0] Logout")}
+              onClick={handleLogout}
               className="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-slate-600 hover:text-white hover:bg-slate-800/50 transition-colors"
             >
               <LogOut className="h-5 w-5" />

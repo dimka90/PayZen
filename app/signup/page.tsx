@@ -33,7 +33,7 @@ export default function SignupPage() {
         setUsernameCheckLoading(true);
         try {
           const response = await fetch(
-            `http://localhost:5000/api/v1/auth/username/check?username=${username}`,
+            `${process.env.NEXT_PUBLIC_API_URL}/auth/username/check?username=${username}`,
           );
           const data = await response.json();
           setIsUsernameAvailable(data.data.available);
@@ -57,7 +57,7 @@ export default function SignupPage() {
 
     try {
       const response = await fetch(
-        "http://localhost:5000/api/v1/auth/register",
+        `${process.env.NEXT_PUBLIC_API_URL}/auth/register`,
         {
           method: "POST",
           headers: {
