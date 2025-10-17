@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import db from '../database';
 import config from '../config';
 import blockchainService from './blockchain.service';
+import { SignOptions } from 'jsonwebtoken';
 import { JWTPayload, User } from '../types/payzen_types';
 
 class AuthService {
@@ -120,7 +121,7 @@ class AuthService {
   //   }
   // }
 
- generateToken(user: User): string {
+generateToken(user: User): string {
   if (!config.jwt.secret) {
     throw new Error('JWT secret is not configured');
   }
@@ -130,14 +131,15 @@ class AuthService {
     user_id: user.id,
   };
 
-  const options: jwt.SignOptions = {
-    expiresIn: config.jwt.expires_in as string | number, // Type assertion to handle both string and number
+  const options: SignOptions = {
+    expiresIn: typeof config.jwt.expires_in === 'number' 
+      ? config.jwt.expires_in 
+      : parseInt(config.jwt.expires_in, 10) || '7d',
     algorithm: 'HS256'
   };
 
   return jwt.sign(payload, config.jwt.secret, options);
 }
-
 
 
 
