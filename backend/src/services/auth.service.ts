@@ -120,7 +120,7 @@ class AuthService {
   //   }
   // }
 
-   generateToken(user: User): string {
+ generateToken(user: User): string {
   if (!config.jwt.secret) {
     throw new Error('JWT secret is not configured');
   }
@@ -131,12 +131,13 @@ class AuthService {
   };
 
   const options: jwt.SignOptions = {
-    expiresIn: String(config.jwt.expires_in), // Convert to string explicitly
+    expiresIn: config.jwt.expires_in as string | number, // Type assertion to handle both string and number
     algorithm: 'HS256'
   };
 
   return jwt.sign(payload, config.jwt.secret, options);
 }
+
 
 
 
