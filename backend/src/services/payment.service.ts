@@ -44,6 +44,44 @@ class PaymentService {
   }
 
   /**
+   * Save a finalized transaction record
+   */
+  async saveTransaction(
+    transactionHash: string,
+    fromWallet: string,
+    toWallet: string,
+    amount: string,
+    currency: string = 'USDC',
+    note?: string,
+    status: string = 'completed'
+  ): Promise<Transaction> {
+    const result = await db.query(
+      `INSERT INTO transactions (
+         transaction_hash,
+         from_wallet,
+         to_wallet,
+         amount,
+         currency,
+         note,
+         status
+       )
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       RETURNING *`,
+      [
+        transactionHash.toLowerCase(),
+        fromWallet.toLowerCase(),
+        toWallet.toLowerCase(),
+        amount,
+        currency.toUpperCase(),
+        note || null,
+        status.toLowerCase(),
+      ]
+    );
+
+    return result.rows[0] as Transaction;
+  }
+
+  /**
    * Update transaction status
    */
   async updateTransactionStatus(

@@ -100,6 +100,51 @@ export const validateSendPayment = [
   validate,
 ];
 
+// Save payment validation
+export const validateSavePayment = [
+  body('transaction_hash')
+    .exists().withMessage('Transaction hash is required')
+    .isString().withMessage('Transaction hash must be a string')
+    .trim()
+    .notEmpty().withMessage('Transaction hash cannot be empty'),
+
+  body('from_wallet')
+    .exists().withMessage('Sender wallet address is required')
+    .isString().withMessage('Sender wallet address must be a string')
+    .trim()
+    .notEmpty().withMessage('Sender wallet address cannot be empty'),
+
+  body('to_wallet')
+    .exists().withMessage('Recipient wallet address is required')
+    .isString().withMessage('Recipient wallet address must be a string')
+    .trim()
+    .notEmpty().withMessage('Recipient wallet address cannot be empty'),
+
+  body('amount')
+    .exists().withMessage('Amount is required')
+    .isString().withMessage('Amount must be a string')
+    .matches(/^\d+(\.\d{1,6})?$/).withMessage('Invalid amount format')
+    .custom((value) => parseFloat(value) > 0).withMessage('Amount must be greater than 0'),
+
+  body('currency')
+    .optional()
+    .isString().withMessage('Currency must be a string')
+    .isIn(['USDC', 'ETH', 'STRK']).withMessage('Unsupported currency type'),
+
+  body('note')
+    .optional()
+    .isString().withMessage('Note must be a string')
+    .trim()
+    .isLength({ max: 500 }).withMessage('Note must not exceed 500 characters'),
+
+  body('status')
+    .optional()
+    .isString().withMessage('Status must be a string')
+    .isIn(['pending', 'completed', 'failed']).withMessage('Invalid transaction status'),
+
+  validate,
+];
+
 // Create payment link validation
 export const validateCreatePaymentLink = [
   body('title')

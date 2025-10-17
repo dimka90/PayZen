@@ -194,6 +194,45 @@ class AuthController {
     }
   }
 
+
+  /**
+   * Check if username is available
+   * GET /api/v1/auth/username/check?username=johndoe
+   */
+  async checkWalletAddress(req: Request, res: Response): Promise<void> {
+    try {
+      const { wallet_address } = req.body;
+
+      if (!wallet_address || typeof wallet_address !== 'string') {
+        res.status(400).json({
+          success: false,
+          error: 'Wallet address is required',
+        });
+        return;
+      }
+
+      const isAvailable = await authService.getUserByWallet(wallet_address);
+
+      if(!isAvailable) {
+        res.status(400).json({
+          success: false,
+          error: 'User not found.',
+        });
+        return;
+      }
+
+      res.status(200).json({
+        success: true
+      });
+    } catch (error) {
+      console.error('Check username error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to check username',
+      });
+    }
+  }
+
   /**
    * Get current user info
    * GET /api/v1/auth/me
@@ -231,6 +270,51 @@ class AuthController {
             business_name: user.business_name,
             business_type: user.business_type,
             created_at: user.created_at,
+          },
+        },
+      });
+    } catch (error) {
+      console.error('Get current user error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to get user info',
+      });
+    }
+  }
+
+  /**
+   * Get current user info
+   * GET /api/v1/auth/me
+   */
+  async getUser(req: Request, res: Response): Promise<void> {
+    try {
+      const { username } = req.body;
+
+      if(!username) {
+        res.status(400).json({
+          success: false,
+          error: 'User name is required',
+        });
+        return;
+      }
+
+      const user = await authService.getUserByUsername(username);
+
+      if (!user) {
+        res.status(404).json({
+          success: false,
+          error: 'User not found',
+        });
+        return;
+      }
+
+      res.status(200).json({
+        success: true,
+        data: {
+          user: {
+            wallet_address: user.wallet_address,
+            full_name: user.full_name,
+            username: user.username
           },
         },
       });

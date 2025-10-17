@@ -80,6 +80,71 @@ class PaymentController {
   }
 
   /**
+   * Save completed transaction details (after frontend confirmation)
+   * POST /api/v1/payments/save
+   */
+  async saveTransaction(req: Request, res: Response): Promise<void> {
+    try {
+      const {
+        transaction_hash,
+        from_wallet,
+        to_wallet,
+        amount,
+        currency = 'USDC',
+        note,
+        status = 'completed',
+      } = req.body;
+
+      const userWallet = req.user?.wallet_address;
+
+      // Ensure user is authenticated
+      if (!userWallet) {
+        res.status(401).json({
+          success: false,
+          error: 'Unauthorized',
+        });
+        return;
+      }
+
+      // Validate required fields
+      if (!transaction_hash || !from_wallet || !to_wallet || !amount) {
+        res.status(400).json({
+          success: false,
+          error: 'Missing required transaction fields',
+          required_fields: ['transaction_hash', 'from_wallet', 'to_wallet', 'amount'],
+        });
+        return;
+      }
+
+      // Save transaction in DB
+      const savedTransaction = await paymentService.saveTransaction(
+        transaction_hash,
+        from_wallet,
+        to_wallet,
+        amount,
+        currency,
+        note,
+        status
+      );
+
+      res.status(201).json({
+        success: true,
+        message: 'Transaction saved successfully',
+        data: {
+          transaction: savedTransaction,
+        },
+      });
+    } catch (error) {
+      console.error('Save transaction error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to save transaction',
+      });
+    }
+  }
+
+
+  /**
    * Update transaction with blockchain hash
    * PUT /api/v1/payments/transactions/:id
    */

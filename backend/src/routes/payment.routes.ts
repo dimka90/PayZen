@@ -3,6 +3,7 @@ import paymentController from '../controllers/payment.controller';
 import { authenticateToken } from '../middleware/auth.middleware';
 import {
   validateSendPayment,
+  validateSavePayment,
   validateCreatePaymentLink,
   validateUpdateTransaction,
 } from '../middleware/validator.middleware';
@@ -18,6 +19,13 @@ router.use(authenticateToken);
  * @access  Private
  */
 router.post('/send', validateSendPayment, paymentController.sendPayment);
+
+/**
+ * @route   POST /api/v1/payments/save
+ * @desc    Create new payment transaction
+ * @access  Private
+ */
+router.post('/save', validateSavePayment, paymentController.sendPayment);
 
 /**
  * @route   GET /api/v1/payments/transactions
