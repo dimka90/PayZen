@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import authService from '../services/auth.service';
-import { JWTPayload } from '../types';
+import { JWTPayload } from  '../types/payzen_types';
 
 // Extend Express Request type
 declare global {
@@ -56,7 +56,7 @@ export const authenticateToken = async (
  */
 export const optionalAuth = async (
   req: Request,
-  res: Response,
+  _: Response,
   next: NextFunction
 ): Promise<void> => {
   try {

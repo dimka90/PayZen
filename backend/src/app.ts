@@ -54,7 +54,7 @@ app.use('/api/', limiter);
 app.use(`/api/${config.api_version}`, routes);
 
 // Root endpoint
-app.get('/', (req: Request, res: Response) => {
+app.get('/', (_: Request, res: Response) => {
   res.status(200).json({
     success: true,
     message: 'Welcome to PayZen API',
@@ -73,7 +73,7 @@ app.use((req: Request, res: Response) => {
 });
 
 // Error handler
-app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
   console.error('Error:', err);
 
   res.status(500).json({

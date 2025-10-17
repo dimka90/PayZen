@@ -3,7 +3,7 @@ import crypto from 'crypto';
 import db from '../database';
 import config from '../config';
 import blockchainService from './blockchain.service';
-import { JWTPayload, User } from '../types';
+import { JWTPayload, User } from '../types/payzen_types';
 
 class AuthService {
   /**
@@ -101,9 +101,11 @@ class AuthService {
       user_id: user.id,
     };
 
-    return jwt.sign(payload, config.jwt.secret, {
-      expiresIn: config.jwt.expires_in,
-    });
+      const options = {
+    expiresIn: config.jwt.expires_in,
+  };
+
+  return jwt.sign(payload, config.jwt.secret, options)
   }
 
   /**
