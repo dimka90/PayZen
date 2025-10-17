@@ -120,28 +120,24 @@ class AuthService {
   //   }
   // }
 
-     generateToken(user: User): string {
-    if (!config.jwt.secret) {
-      throw new Error('JWT secret is not configured');
-    }
-
-    const payload: JWTPayload = {
-      wallet_address: user.wallet_address,
-      user_id: user.id,
-    };
-
-    // Convert expiresIn to string if it's a number
-    const expiresIn = typeof config.jwt.expires_in === 'number' 
-      ? config.jwt.expires_in.toString() 
-      : config.jwt.expires_in;
-
-    const options: jwt.SignOptions = {
-      expiresIn,
-      algorithm: 'HS256'
-    };
-
-    return jwt.sign(payload, config.jwt.secret, options);
+   generateToken(user: User): string {
+  if (!config.jwt.secret) {
+    throw new Error('JWT secret is not configured');
   }
+
+  const payload: JWTPayload = {
+    wallet_address: user.wallet_address,
+    user_id: user.id,
+  };
+
+  const options: jwt.SignOptions = {
+    expiresIn: String(config.jwt.expires_in), // Convert to string explicitly
+    algorithm: 'HS256'
+  };
+
+  return jwt.sign(payload, config.jwt.secret, options);
+}
+
 
 
   /**
