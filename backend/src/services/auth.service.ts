@@ -120,7 +120,7 @@ class AuthService {
   //   }
   // }
 
-    generateToken(user: User): string {
+     generateToken(user: User): string {
     if (!config.jwt.secret) {
       throw new Error('JWT secret is not configured');
     }
@@ -130,13 +130,19 @@ class AuthService {
       user_id: user.id,
     };
 
+    // Convert expiresIn to string if it's a number
+    const expiresIn = typeof config.jwt.expires_in === 'number' 
+      ? config.jwt.expires_in.toString() 
+      : config.jwt.expires_in;
+
     const options: jwt.SignOptions = {
-      expiresIn: config.jwt.expires_in,
+      expiresIn,
       algorithm: 'HS256'
     };
 
     return jwt.sign(payload, config.jwt.secret, options);
   }
+
 
   /**
    * Verify JWT token

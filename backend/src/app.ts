@@ -15,12 +15,19 @@ app.use(helmet());
 // CORS configuration
 app.use(
   cors({
-    origin: config.cors.origins,
+    origin: function(origin, callback) {
+      if (!origin || config.cors.origins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization'],
   })
 );
+
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
