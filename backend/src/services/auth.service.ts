@@ -95,30 +95,67 @@ class AuthService {
   /**
    * Generate JWT token
    */
-  generateToken(user: User): string {
+  // generateToken(user: User): string {
+  //   const payload: JWTPayload = {
+  //     wallet_address: user.wallet_address,
+  //     user_id: user.id,
+  //   };
+
+  //     const options = {
+  //   expiresIn: config.jwt.expires_in,
+  // };
+
+  // return jwt.sign(payload, config.jwt.secret, options)
+  // }
+
+  // /**
+  //  * Verify JWT token
+  //  */
+  // verifyToken(token: string): JWTPayload | null {
+  //   try {
+  //     const decoded = jwt.verify(token, config.jwt.secret) as JWTPayload;
+  //     return decoded;
+  //   } catch (error) {
+  //     return null;
+  //   }
+  // }
+
+    generateToken(user: User): string {
+    if (!config.jwt.secret) {
+      throw new Error('JWT secret is not configured');
+    }
+
     const payload: JWTPayload = {
       wallet_address: user.wallet_address,
       user_id: user.id,
     };
 
-      const options = {
-    expiresIn: config.jwt.expires_in,
-  };
+    const options: jwt.SignOptions = {
+      expiresIn: config.jwt.expires_in,
+      algorithm: 'HS256'
+    };
 
-  return jwt.sign(payload, config.jwt.secret, options)
+    return jwt.sign(payload, config.jwt.secret, options);
   }
 
   /**
    * Verify JWT token
    */
   verifyToken(token: string): JWTPayload | null {
+    if (!config.jwt.secret) {
+      throw new Error('JWT secret is not configured');
+    }
+
     try {
-      const decoded = jwt.verify(token, config.jwt.secret) as JWTPayload;
+      const decoded = jwt.verify(token, config.jwt.secret, {
+        algorithms: ['HS256']
+      }) as JWTPayload;
       return decoded;
     } catch (error) {
       return null;
     }
   }
+
 
   /**
    * Register new user
