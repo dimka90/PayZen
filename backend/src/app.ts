@@ -2,7 +2,7 @@ import express, { Application, Request, Response, NextFunction } from 'express';
 // import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
-import compression from 'compression';
+// import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import config from './config';
 import routes from './routes';
