@@ -40,8 +40,8 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Compression middleware
-app.use(compression());
+// // Compression middleware
+// app.use(compression());
 
 // Logging middleware
 if (config.node_env === 'development') {
